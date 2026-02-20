@@ -2,11 +2,7 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"sort"
 	"sync"
 	"time"
@@ -95,36 +91,14 @@ func getYieldHistory(ctx context.Context, input *YieldHistoryInput) (*YieldHisto
 		endDate = input.End
 	}
 
-	fredURL := fmt.Sprintf("%s?series_id=%s&api_key=%s&file_type=json&sort_order=asc&observation_start=%s",
-		gateway.FredBaseURL, input.Series, gateway.FredAPIKey, startDate)
-	if endDate != "" {
-		fredURL += "&observation_end=" + endDate
-	}
-
-	resp, err := http.Get(fredURL)
+	pts, err := gateway.FetchYieldHistory(input.Series, startDate, endDate)
 	if err != nil {
-		return nil, huma.Error502BadGateway("failed to contact FRED", nil)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, huma.Error502BadGateway("failed to read FRED response", nil)
+		return nil, huma.Error502BadGateway("failed to fetch yield history", nil)
 	}
 
-	var fredResp gateway.FredResponse
-	if err := json.Unmarshal(body, &fredResp); err != nil {
-		return nil, huma.Error502BadGateway("failed to parse FRED response", nil)
-	}
-
-	var history []HistoryPoint
-	for _, obs := range fredResp.Observations {
-		if obs.Value == "." {
-			continue
-		}
-		var val float64
-		fmt.Sscanf(obs.Value, "%f", &val)
-		history = append(history, HistoryPoint{Date: obs.Date, Yield: val})
+	history := make([]HistoryPoint, len(pts))
+	for i, p := range pts {
+		history[i] = HistoryPoint{Date: p.Date, Yield: p.Yield}
 	}
 
 	return &YieldHistoryOutput{Body: history}, nil

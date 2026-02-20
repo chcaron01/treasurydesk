@@ -77,3 +77,44 @@ func FetchLatestYield(seriesID string) (float64, error) {
 
 	return 0, fmt.Errorf("no valid observations for %s", seriesID)
 }
+
+type HistoryPoint struct {
+	Date  string
+	Yield float64
+}
+
+func FetchYieldHistory(seriesID, startDate, endDate string) ([]HistoryPoint, error) {
+	url := fmt.Sprintf("%s?series_id=%s&api_key=%s&file_type=json&sort_order=asc&observation_start=%s",
+		FredBaseURL, seriesID, FredAPIKey, startDate)
+	if endDate != "" {
+		url += "&observation_end=" + endDate
+	}
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var fredResp FredResponse
+	if err := json.Unmarshal(body, &fredResp); err != nil {
+		return nil, err
+	}
+
+	var history []HistoryPoint
+	for _, obs := range fredResp.Observations {
+		if obs.Value == "." {
+			continue
+		}
+		var val float64
+		fmt.Sscanf(obs.Value, "%f", &val)
+		history = append(history, HistoryPoint{Date: obs.Date, Yield: val})
+	}
+
+	return history, nil
+}
