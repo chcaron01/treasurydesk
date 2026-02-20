@@ -76,7 +76,6 @@ export default function DateRangePicker({ startDate, endDate, onChange }: Props)
             <DayPicker
               mode="single"
               selected={toDate(startDate)}
-              month={toDate(startDate)}
               onSelect={(d) => {
                 if (d) {
                   onChange(toStr(d), endDate)
@@ -108,7 +107,6 @@ export default function DateRangePicker({ startDate, endDate, onChange }: Props)
             <DayPicker
               mode="single"
               selected={toDate(endDate)}
-              month={toDate(endDate)}
               onSelect={(d) => {
                 if (d) {
                   onChange(startDate, toStr(d))
