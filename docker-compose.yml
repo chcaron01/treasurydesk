@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: treasury
+      POSTGRES_PASSWORD: treasury
+      POSTGRES_DB: treasury
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./api/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./api
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env.local
+    environment:
+      CORS_ORIGIN: http://localhost:4000
+      DATABASE_URL: "host=db port=5432 user=treasury password=treasury dbname=treasury sslmode=disable"
+    volumes:
+      - ./api:/app
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./ui
+    ports:
+      - "4000:4000"
+    environment:
+      VITE_API_URL: http://localhost:8080
+    volumes:
+      - ./ui:/app
+      - ui_node_modules:/app/node_modules
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  ui_node_modules:
