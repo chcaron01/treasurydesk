@@ -163,6 +163,8 @@ go test ./...
 
 Handler tests spin up a mock FRED HTTP server using `net/http/httptest` and exercise the full request/response cycle.
 
+Be sure to set FRED_API_KEY in terminal environment so tests run correctly.
+
 ---
 
 ## API documentation
